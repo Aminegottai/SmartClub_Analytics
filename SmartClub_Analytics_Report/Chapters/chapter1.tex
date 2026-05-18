@@ -1,0 +1,179 @@
+\chapter{Présentation Générale du Projet}
+
+\section{Introduction}
+
+L'évolution rapide des technologies numériques et de l'intelligence artificielle a profondément transformé le monde du sport professionnel au cours de la dernière décennie. Les clubs de football, en particulier, sont devenus des organisations data-driven où chaque aspect de la performance — de la condition physique des joueurs à la stratégie tactique en passant par la nutrition et la récupération — est désormais mesuré, analysé et optimisé.
+
+La gestion de la santé des joueurs constitue l'un des enjeux les plus critiques pour les clubs modernes. Les blessures sportives représentent non seulement un coût économique direct (salaires versés aux joueurs indisponibles) mais aussi un coût indirect lié à la dégradation des performances collectives. Les statistiques publiées par l'UEFA en 2024 indiquent que les clubs européens de première division enregistrent en moyenne 1,2 blessure par match, avec une indisponibilité moyenne de 18 jours par blessure. Ces chiffres soulignent l'urgence de développer des outils prédictifs et préventifs performants.
+
+C'est dans ce contexte que s'inscrit le projet \textbf{SmartClub Analytics}, dont ce chapitre introductif présente le contexte, la problématique, les objectifs et la vision d'ensemble.
+
+\section{Contexte du projet}
+
+\subsection{La data science au service du football moderne}
+
+Le football professionnel a connu une véritable révolution data au cours des dix dernières années. L'adoption massive des technologies de tracking GPS, des capteurs physiologiques portables et des plateformes d'analyse vidéo a généré un volume de données sans précédent. Selon une étude de McKinsey \& Company (2024), un club de football européen de haut niveau produit aujourd'hui en moyenne plus de 500~Go de données par saison, couvrant :
+
+\begin{itemize}
+    \item les \textbf{données de charge d'entraînement} : distance parcourue, accélérations, décélérations, fréquence cardiaque, puissance mécanique ;
+    \item les \textbf{données de bien-être subjectif} : qualité du sommeil, fatigue perçue, courbatures, stress, humeur ;
+    \item les \textbf{données médicales} : historique des blessures, examens cliniques, imagerie médicale ;
+    \item les \textbf{données nutritionnelles} : apports caloriques, macronutriments, compléments alimentaires ;
+    \item les \textbf{données de performance en match} : positions, passes, tirs, dribbles, duels.
+\end{itemize}
+
+Cependant, la collecte de ces données ne constitue qu'une première étape. Le véritable défi réside dans leur intégration, leur analyse et leur transformation en informations actionnables pour les staffs techniques et médicaux. C'est précisément l'objectif que se fixe SmartClub Analytics.
+
+\subsection{Les datasets fondateurs du projet}
+
+SmartClub Analytics repose sur trois jeux de données réels, soigneusement sélectionnés pour leur qualité scientifique et leur pertinence opérationnelle :
+
+\subsubsection{SoccerMon — Suivi de charge et blessures}
+
+Le dataset \textbf{SoccerMon} \cite{soccermon} constitue la pierre angulaire du module PhysioAI. Il contient les données longitudinales de 50 joueurs de football professionnels suivis sur une période de 731 jours. Le jeu de données inclut :
+
+\begin{itemize}
+    \item 19 fichiers de charge d'entraînement et de bien-être (fatigue, qualité du sommeil, courbatures, stress, humeur, charge aiguë/chronique — ACWR) ;
+    \item 162 épisodes de blessure documentés avec leur typologie et leur durée ;
+    \item Des données quotidiennes de charge d'entraînement (charge aiguë, charge chronique, ratio ACWR, monotonie, strain).
+\end{itemize}
+
+Ce dataset, publié dans le cadre de recherches académiques en science du sport, offre une base solide pour l'entraînement de modèles prédictifs de risque de blessure.
+
+\subsubsection{StatsBomb Open Data — Performance en match}
+
+Le dataset \textbf{StatsBomb Open Data} \cite{statsbomb} fournit des données événementielles détaillées de la Liga espagnole 2020/21. Il contient des informations granulaires sur chaque action de jeu : passes, tirs, dribbles, duels, fautes, etc. Ces données enrichissent le module ScoutAI en offrant une évaluation quantitative des performances des joueurs en situation de match.
+
+\subsubsection{USDA FoodData Central — Base nutritionnelle}
+
+La base de données \textbf{USDA FoodData Central} \cite{usdafooddata} constitue la référence mondiale en matière de composition nutritionnelle des aliments. Nous exploitons spécifiquement le sous-ensemble \textit{Foundation Foods}, qui contient 436 aliments de base avec leurs profils nutritionnels complets (calories, protéines, lipides, glucides, fibres, vitamines, minéraux). Cette base alimente le module NutriAI pour la génération de plans nutritionnels personnalisés.
+
+\subsection{L'écosystème technologique}
+
+Le projet s'inscrit dans un écosystème technologique moderne, combinant les meilleures pratiques du développement web full-stack et de l'apprentissage automatique :
+
+\begin{itemize}
+    \item \textbf{Python / Django 4.2} pour le backend, offrant un framework mature, sécurisé et extensible ;
+    \item \textbf{React 18} pour le frontend, garantissant une expérience utilisateur réactive et moderne ;
+    \item \textbf{CatBoost} pour l'apprentissage automatique, choisi pour sa gestion native des caractéristiques catégorielles et sa robustesse ;
+    \item \textbf{Groq / OpenAI} pour l'inférence LLM, offrant des performances de pointe en temps réel.
+\end{itemize}
+
+\section{Problématique}
+
+\subsection{Énoncé du problème}
+
+La problématique centrale traitée par le projet SmartClub Analytics peut être formulée comme suit :
+
+\begin{quote}
+\textit{Comment concevoir et réaliser une plateforme intégrée, exploitant l'intelligence artificielle et l'analyse de données, permettant aux clubs de football professionnels de prédire et prévenir les blessures, d'optimiser la nutrition des joueurs, et de faciliter l'exploration intelligente des données club via le langage naturel ?}
+\end{quote}
+
+Cette question soulève plusieurs sous-problèmes techniques et scientifiques :
+
+\begin{itemize}
+    \item Comment entraîner un modèle de machine learning capable de prédire le risque de blessure à partir de données longitudinales de charge et de bien-être, avec une précision suffisante pour être cliniquement utile ?
+    \item Comment concevoir un système de planification nutritionnelle automatisée, adapté aux besoins spécifiques de chaque joueur (position, intensité d'entraînement, objectifs) ?
+    \item Comment intégrer un assistant conversationnel intelligent, capable de comprendre et répondre à des requêtes complexes en langage naturel, dans plusieurs langues, et d'interagir avec l'ensemble des données de la plateforme ?
+    \item Comment assurer la sécurité, la confidentialité et le contrôle d'accès aux données sensibles des joueurs (médicales, contractuelles) ?
+\end{itemize}
+
+\subsection{Verrous technologiques}
+
+L'analyse préliminaire du projet a mis en évidence plusieurs verrous technologiques :
+
+\begin{enumerate}
+    \item \textbf{Verrou des données} : la rareté et la sensibilité des données médicales sportives imposent une stratégie de collecte et d'annotation rigoureuse ;
+    \item \textbf{Verrou du déséquilibre de classes} : les épisodes de blessure sont rares par rapport aux jours sans blessure, ce qui impose des techniques spécifiques (oversampling, pondération) ;
+    \item \textbf{Verrou de l'interprétabilité} : les prédictions d'un modèle de blessure doivent être explicables pour gagner la confiance des staffs médicaux (besoin d'explicabilité SHAP) ;
+    \item \textbf{Verrou multilingue} : le support du dialecte tunisien (arabe dialectal) pour l'assistant conversationnel pose des défis de tokenisation et de compréhension spécifiques.
+\end{enumerate}
+
+\section{Objectifs du projet}
+
+\subsection{Objectif principal}
+
+L'objectif principal du projet SmartClub Analytics est de \textbf{concevoir, implémenter et valider une plateforme intégrée de gestion sportive intelligente}, combinant prédiction de blessure, nutrition personnalisée, scouting et interaction en langage naturel.
+
+\subsection{Objectifs spécifiques}
+
+Cet objectif se décline en objectifs spécifiques mesurables :
+
+\begin{itemize}
+    \item \textbf{O1 -- PhysioAI} : développer un modèle de prédiction de risque de blessure basé sur CatBoost avec une AUC cible $\geq$ 0,85 ;
+    \item \textbf{O2 -- NutriAI} : implémenter un moteur de planification nutritionnelle basé sur règles, couvrant 5 profils d'intensité d'entraînement (repos, léger, modéré, intense, match) ;
+    \item \textbf{O3 -- ScoutAI} : réaliser une interface de gestion des profils joueurs et des contrats avec filtres dynamiques ;
+    \item \textbf{O4 -- Chatbot} : développer un chatbot à base de règles couvrant 14 intentions métier et un agent LLM supportant 4 langues ;
+    \item \textbf{O5 -- Monitoring} : déployer un tableau de bord temps réel des performances API et des ressources système ;
+    \item \textbf{O6 -- Sécurité} : implémenter une authentification JWT avec RBAC à 5 niveaux.
+\end{itemize}
+
+\section{Vision du projet}
+
+SmartClub Analytics ambitionne de devenir la plateforme de référence pour la gestion intelligente des clubs de football. La vision du projet s'articule autour de trois piliers fondamentaux :
+
+\begin{itemize}
+    \item \textbf{Prévention} : anticiper les blessures avant qu'elles ne surviennent, grâce à des modèles prédictifs entraînés sur des données réelles ;
+    \item \textbf{Personnalisation} : adapter la nutrition et l'entraînement à chaque joueur, en fonction de ses besoins spécifiques et de son état du moment ;
+    \item \textbf{Interaction} : offrir une interface naturelle et intuitive — via le langage naturel — pour interagir avec l'ensemble des données club.
+\end{itemize}
+
+\section{Architecture conceptuelle du système}
+
+Le système SmartClub Analytics est structuré autour d'une architecture modulaire en trois couches distinctes, illustrée dans la figure~ci-dessous.
+
+\begin{center}
+\begin{tikzpicture}[
+    every node/.style={font=\scriptsize},
+    layer/.style={rectangle, draw, rounded corners=5pt, minimum width=14cm,
+                  minimum height=1.8cm, align=center, fill=blue!8, drop shadow},
+    component/.style={rectangle, draw=blue!50, fill=blue!15, rounded corners=3pt,
+                      minimum width=2.2cm, minimum height=0.7cm, align=center, font=\scriptsize},
+    arr/.style={-Stealth, thick, gray!70!black}
+]
+% Layer 1: Browser
+\node[layer, fill=green!8, draw=green!50!black] (browser) at (0,4.5) {};
+\node[font=\bfseries\small] at (browser.north west) [anchor=north west, xshift=4pt, yshift=-4pt] {Couche Présentation -- React 18 Frontend :3000};
+\node[component, fill=green!15, draw=green!60!black] (dash) at (-5.5,4.3) {Dashboard\\Recharts};
+\node[component, fill=green!15, draw=green!60!black] (physio) at (-3.0,4.3) {PhysioAI\\v2 UI};
+\node[component, fill=green!15, draw=green!60!black] (nutri) at (-0.5,4.3) {NutriAI\\UI};
+\node[component, fill=green!15, draw=green!60!black] (scout) at (2.0,4.3) {ScoutAI\\UI};
+\node[component, fill=green!15, draw=green!60!black] (chat) at (4.5,4.3) {Chatbot\\LLM UI};
+\node[component, fill=green!15, draw=green!60!black] (mon) at (6.8,4.3) {Monitoring\\Temps réel};
+
+% Layer 2: API
+\node[layer, fill=orange!10, draw=orange!60!black] (api) at (0,1.5) {};
+\node[font=\bfseries\small] at (api.north west) [anchor=north west, xshift=4pt, yshift=-4pt] {Couche API -- Django REST Framework :8000};
+\node[component, fill=orange!15, draw=orange!70!black] (auth) at (-6.0,1.4) {/api/auth/\\JWT + RBAC};
+\node[component, fill=orange!15, draw=orange!70!black] (v2) at (-3.5,1.4) {/api/v2/physio/\\ML Inference};
+\node[component, fill=orange!15, draw=orange!70!black] (nutriapi) at (-0.8,1.4) {/api/nutri/\\Food + Plans};
+\node[component, fill=orange!15, draw=orange!70!black] (scoutapi) at (1.8,1.4) {/api/scout/\\Players + Contrats};
+\node[component, fill=orange!15, draw=orange!70!black] (chatapi) at (4.2,1.4) {/api/chat*/\\Intent + LLM};
+\node[component, fill=orange!15, draw=orange!70!black] (monapi) at (6.5,1.4) {/api/monitoring/\\Métriques};
+
+% Layer 3: Data
+\node[layer, fill=red!8, draw=red!50!black] (data) at (0,-1.5) {};
+\node[font=\bfseries\small] at (data.north west) [anchor=north west, xshift=4pt, yshift=-4pt] {Couche Données -- Datasets + ML};
+\node[component, fill=red!15, draw=red!70!black] (socc) at (-5.5,-1.6) {SoccerMon\\50 players};
+\node[component, fill=red!15, draw=red!70!black] (stats) at (-3.0,-1.6) {StatsBomb\\Liga 2020/21};
+\node[component, fill=red!15, draw=red!70!black] (usda) at (-0.5,-1.6) {USDA Food\\436 foods};
+\node[component, fill=red!15, draw=red!70!black] (model) at (2.5,-1.6) {CatBoost\\Risk + Absence};
+\node[component, fill=violet!15, draw=violet!70!black] (llm) at (5.5,-1.6) {Groq / OpenAI\\LLM};
+
+% Arrows
+\draw[arr] (browser.south) -- node[right, font=\tiny]{HTTP / JSON / SSE} (api.north);
+\draw[arr] (api.south) -- node[right, font=\tiny]{ORM / Inference} (data.north);
+
+\end{tikzpicture}
+
+\vspace{0.2cm}
+\small\textit{Architecture en trois couches de la plateforme SmartClub Analytics}
+\end{center}
+
+\section{Conclusion}
+
+Ce chapitre introductif a présenté le contexte stratégique et scientifique dans lequel s'inscrit le projet SmartClub Analytics. Nous avons mis en lumière les défis auxquels font face les clubs de football professionnels dans la gestion de la santé et de la performance de leurs joueurs, et motivé l'adoption d'une approche intégrée combinant intelligence artificielle, analyse de données et interaction en langage naturel.
+
+La problématique de recherche a été formalisée, les verrous technologiques identifiés, et les objectifs spécifiques énoncés. L'architecture conceptuelle du système a été présentée à grands traits, posant les fondations pour les chapitres suivants.
+
+Le chapitre~2 approfondira l'état de l'art des technologies mobilisées et formalisera les besoins fonctionnels et non fonctionnels qui guideront la conception détaillée présentée au chapitre~3.

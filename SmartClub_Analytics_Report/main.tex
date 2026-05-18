@@ -1,0 +1,164 @@
+\documentclass{modificopy}
+\usepackage{lipsum}
+
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    citecolor=green!40!black
+}
+
+\title{SmartClub Analytics}
+
+\begin{document}
+
+%----------- Informations du rapport ---------
+
+\titre{SmartClub Analytics : Plateforme Intelligente \\ pour la Gestion et le Suivi des Clubs de Football}
+
+\sujet{Projet de Fin d'Études \\ Année Académique 2024--2025}
+
+\enseignant{[Nom de l'Encadrant] \\ [Poste]}
+
+\eleves{Bilel \textsc{Amri}}
+
+%----------- Initialisation -------------------
+
+\fairemarges
+\fairepagedegarde
+
+\newpage
+
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+
+Je tiens à exprimer ma profonde gratitude à toutes les personnes qui ont contribué, de près ou de loin, à la réussite de ce projet.
+
+Je remercie chaleureusement mon encadrant, [Nom de l'encadrant], pour sa disponibilité, ses conseils avisés et son accompagnement tout au long de ce travail. Son expertise et ses orientations m'ont permis de mener à bien ce projet dans les meilleures conditions.
+
+Je remercie également l'équipe pédagogique de TEK-UP pour la qualité de la formation dispensée tout au long de mon parcours académique, ainsi que pour leur soutien et leurs encouragements.
+
+Enfin, je souhaite exprimer ma reconnaissance envers ma famille et mes proches pour leur soutien indéfectible et leurs encouragements constants.
+
+\newpage
+
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+\section*{Français}
+
+\textbf{SmartClub Analytics} est une plateforme complète de gestion sportive, pilotée par l'intelligence artificielle, conçue pour les clubs de football professionnels. Elle intègre la prédiction des risques de blessure, la planification nutritionnelle personnalisée, le scouting intelligent de joueurs, ainsi qu'un assistant conversationnel multimodal — le tout au sein d'un tableau de bord unifié et authentifié.
+
+La plateforme s'appuie sur trois jeux de données réels du monde sportif : SoccerMon (50 joueurs, 731 jours de suivi, 162 blessures), StatsBomb Open Data (Liga Espagnole 2020/21) et USDA FoodData Central (436 aliments de référence). Le cœur de l'intelligence artificielle repose sur deux modèles CatBoost — un classifieur binaire de risque de blessure (AUC 0,896) et un régresseur de durée d'absence (MAE ~21 jours) — entraînés sur ces données authentiques et intégrés via une API REST Django.
+
+L'architecture technique combine un backend Django 4.2 avec Django REST Framework, un frontend React 18 avec Recharts pour la visualisation de données, un chatbot à base de LLM (Groq/OpenAI) avec support multilingue (EN/FR/AR/TN), et un système de monitoring temps réel des performances API. L'authentification est assurée par JWT avec un contrôle d'accès basé sur les rôles (RBAC) à cinq niveaux.
+
+\vspace{0.5cm}
+\textbf{Mots-clés :} Intelligence Artificielle, Sport, Prédiction de Blessure, Machine Learning, CatBoost, Django, React, Nutrition, Scouting, Chatbot LLM.
+
+\section*{English}
+
+\textbf{SmartClub Analytics} is a comprehensive AI-driven sports management platform designed for professional football clubs. It integrates injury risk prediction, personalized nutrition planning, intelligent player scouting, and a multimodal conversational assistant — all within a unified, authenticated dashboard.
+
+The platform relies on three real-world sports datasets: SoccerMon (50 players, 731 days, 162 injuries), StatsBomb Open Data (La Liga 2020/21), and USDA FoodData Central (436 reference foods). The AI core consists of two CatBoost models — a binary injury risk classifier (AUC 0.896) and an absence duration regressor (MAE ~21 days) — trained on these authentic datasets and integrated via a Django REST API.
+
+The technical architecture combines a Django 4.2 backend with Django REST Framework, a React 18 frontend with Recharts for data visualization, an LLM-powered chatbot (Groq/OpenAI) with multilingual support (EN/FR/AR/TN), and a real-time API performance monitoring system. Authentication is ensured by JWT with a five-level role-based access control (RBAC).
+
+\vspace{0.5cm}
+\textbf{Keywords:} Artificial Intelligence, Sports, Injury Prediction, Machine Learning, CatBoost, Django, React, Nutrition, Scouting, LLM Chatbot.
+
+\newpage
+
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+
+La transformation numérique du sport professionnel s'est considérablement accélérée au cours des dernières années, faisant de l'analyse de données et de l'intelligence artificielle des leviers stratégiques majeurs pour les clubs de football. Selon un rapport de Deloitte publié en 2024, le marché mondial de l'analyse sportive (Sports Analytics) a dépassé les 4 milliards de dollars, avec un taux de croissance annuel composé de 22\,\%. Les clubs de football professionnels génèrent aujourd'hui des volumes massifs de données — tracking GPS, capteurs physiologiques, données de performance, dossiers médicaux, données nutritionnelles — dont l'exploitation optimale constitue à la fois un défi technique et une opportunité compétitive décisive.
+
+Dans ce contexte, la gestion de la santé des joueurs occupe une place centrale. Les blessures sportives représentent un coût économique considérable pour les clubs : selon une étude publiée dans le British Journal of Sports Medicine, un club de football professionnel européen de première division subit en moyenne 15 à 20 blessures par saison, entraînant un coût salarial direct estimé entre 15 et 30 millions d'euros par an pour les clubs de l'élite. Au-delà de l'aspect financier, l'impact sur les performances sportives et la compétitivité de l'équipe est tout aussi significatif.
+
+Parallèlement, la nutrition sportive personnalisée émerge comme un facteur différenciant majeur dans l'optimisation des performances et la prévention des blessures. Les avancées récentes en science nutritionnelle permettent d'élaborer des plans alimentaires adaptés aux besoins spécifiques de chaque athlète, en fonction de sa position, de son intensité d'entraînement et de son métabolisme individuel.
+
+C'est dans cette perspective que s'inscrit le projet \textbf{SmartClub Analytics}, présenté dans ce mémoire. SmartClub Analytics est une plateforme full-stack intégrant cinq modules complémentaires :
+
+\begin{itemize}
+    \item \textbf{PhysioAI v2} : un système de prédiction des risques de blessure basé sur l'apprentissage automatique (CatBoost), intégrant des données de charge d'entraînement, de bien-être subjectif et d'historique médical ;
+    \item \textbf{NutriAI} : un module de planification nutritionnelle personnalisée exploitant la base de données USDA FoodData Central (436 aliments) et des règles nutritionnelles adaptées au contexte sportif ;
+    \item \textbf{ScoutAI} : un outil de gestion des profils joueurs et des contrats, enrichi par les données StatsBomb de la Liga espagnole ;
+    \item \textbf{Chatbot \& Chat LLM} : un assistant conversationnel dual — un chatbot à base de règles (14 intentions) et un agent LLM avec streaming SSE supportant quatre langues (français, anglais, arabe, dialecte tunisien) ;
+    \item \textbf{Monitoring} : un tableau de bord temps réel des performances API, de la latence et des ressources système.
+\end{itemize}
+
+Le présent rapport s'articule en quatre chapitres complémentaires. Le \textbf{premier chapitre} introduit le contexte général du projet, formalise la problématique et expose les objectifs visés. Le \textbf{deuxième chapitre} dresse un état de l'art des technologies utilisées et spécifie les besoins fonctionnels et non fonctionnels. Le \textbf{troisième chapitre} décrit la conception détaillée de l'architecture, des modèles de données et des algorithmes d'intelligence artificielle. Le \textbf{quatrième chapitre} couvre l'implémentation, les tests et les résultats expérimentaux obtenus. Enfin, une conclusion générale synthétise les contributions du projet et trace les perspectives d'évolution.
+
+\newpage
+\tableofcontents
+
+%------------ Corps du rapport ----------------
+\include{Chapters/chapter1}
+\include{Chapters/chapter2}
+\include{Chapters/chapter3}
+\include{Chapters/chapter4}
+
+%------------ Conclusion Générale ------------
+\newpage
+\chapter*{Conclusion Générale et Perspectives}
+\addcontentsline{toc}{chapter}{Conclusion Générale et Perspectives}
+
+\section*{Synthèse des contributions}
+
+Le travail présenté dans ce mémoire s'inscrit à la confluence de trois domaines en pleine expansion : l'analyse de données sportives, l'intelligence artificielle appliquée à la santé des athlètes, et le génie logiciel full-stack. À travers la conception et la réalisation de la plateforme \textbf{SmartClub Analytics}, nous avons démontré la faisabilité technique et la pertinence opérationnelle d'une approche intégrée combinant prédiction de risque, nutrition personnalisée, scouting intelligent et interaction en langage naturel.
+
+Dans un premier temps, nous avons réalisé une analyse approfondie des besoins des clubs de football professionnels en matière de gestion de la santé et de la performance des joueurs. Cette analyse a permis d'établir un cahier des charges rigoureux couvrant la prédiction des blessures via l'apprentissage automatique, la planification nutritionnelle individualisée, le suivi des charges d'entraînement et l'exploration intelligente des données club.
+
+Sur le plan architectural, nous avons conçu et implémenté une solution full-stack complète reposant sur Django 4.2 et React 18. Le backend expose une API REST structurée autour de six modules (Auth, PhysioAI, NutriAI, Scout, Chat, Monitoring), tandis que le frontend propose une interface utilisateur réactive avec des visualisations interactives via Recharts. L'intégration de trois jeux de données réels — SoccerMon, StatsBomb et USDA FoodData Central — confère à la plateforme une crédibilité scientifique et une pertinence pratique immédiate.
+
+Le cœur de l'innovation réside dans les deux modèles d'apprentissage automatique développés :
+
+\begin{itemize}
+    \item un \textbf{classifieur CatBoost de risque de blessure} atteignant une AUC de 0,896, capable de prédire la probabilité qu'un joueur se blesse dans les 7 jours à venir sur la base de 19 indicateurs de charge et de bien-être ;
+    \item un \textbf{régresseur CatBoost de durée d'absence} avec une MAE de ~21 jours, permettant d'estimer la gravité potentielle d'une blessure dès son diagnostic.
+\end{itemize}
+
+Ces modèles sont intégrés dans le module PhysioAI v2, qui offre également un simulateur de scénarios (\textit{what-if}) et un module d'explication narrative par LLM, rendant les prédictions accessibles et actionnables pour les staffs médicaux.
+
+Le module de chat intelligent, combinant un chatbot à base de règles et un agent LLM avec streaming SSE et support multilingue (français, anglais, arabe, dialecte tunisien), offre une interface naturelle et puissante pour interagir avec l'ensemble des données de la plateforme.
+
+\section*{Perspectives}
+
+Plusieurs axes d'amélioration et d'extension se dégagent pour les versions futures de SmartClub Analytics.
+
+\subsection*{Industrialisation de la plateforme}
+
+Le passage à une architecture Dockerisée complète avec orchestration Kubernetes permettrait de déployer la plateforme à l'échelle de clubs professionnels, avec une scalabilité horizontale des services et une haute disponibilité garantie par un orchestrateur de conteneurs.
+
+\subsection*{Enrichissement des modèles ML}
+
+L'intégration de données supplémentaires — tracking GPS haute fréquence, données de match (StatsBomb), données physiologiques avancées (variabilité cardiaque, qualité du sommeil polysomnographique) — permettrait d'améliorer encore la précision prédictive des modèles. L'exploration d'architectures plus complexes (LSTM, Transformers) pour la modélisation temporelle des séries de charge d'entraînement constitue également une piste prometteuse.
+
+\subsection*{Extension des fonctionnalités IA}
+
+Plusieurs modules complémentaires pourraient enrichir la plateforme : un module de réhabilitation assistée par IA (RehaAI) pour le suivi post-blessure, un module de recrutement intelligent (RecruitAI) exploitant l'analyse vidéo et les données de marché, et un module de stratégie tactique (TacticsAI) basé sur l'analyse des données de match.
+
+\subsection*{Passage à l'échelle}
+
+L'architecture actuelle, bien que fonctionnelle, gagnerait à être migrée vers une infrastructure cloud-native (AWS, GCP, Azure) avec une base de données PostgreSQL managée, un cache Redis pour les sessions et les requêtes fréquentes, et un service de file d'attente (Celery / RabbitMQ) pour le traitement asynchrone des tâches lourdes (entraînement de modèles, génération de rapports).
+
+\subsection*{Collaboration multi-clubs}
+
+À plus long terme, une plateforme fédérée permettant à plusieurs clubs de partager des modèles entraînés de manière confidentielle (federated learning) sans divulguer leurs données sensibles représenterait une avancée majeure pour la recherche en science du sport.
+
+Ces perspectives, qu'elles soient à court ou à long terme, démontrent la richesse et le potentiel du champ de recherche dans lequel s'inscrit le projet SmartClub Analytics. Loin d'être un aboutissement, ce travail constitue un socle expérimental solide, prêt à accueillir les innovations qui façonneront la gestion sportive intelligente des prochaines années.
+
+\newpage
+
+%------------ Bibliographie ----------------
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

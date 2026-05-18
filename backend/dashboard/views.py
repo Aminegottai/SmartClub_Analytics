@@ -83,11 +83,11 @@ class DashboardSummaryView(APIView):
         fit_count      = max(0, total_players - injured_count - at_risk_count)
 
         player_status_mix = [
-            {'name': 'Fit',         'value': fit_count,     'fill': 'var(--neon-cyan)'},
-            {'name': 'At Risk',     'value': at_risk_count, 'fill': 'var(--neon-orange)'},
-            {'name': 'Injured',     'value': injured_count, 'fill': 'var(--neon-pink)'},
+            {'name': 'Fit',         'value': fit_count,     'fill': 'var(--color-fit)'},
+            {'name': 'At Risk',     'value': at_risk_count, 'fill': 'var(--color-risk)'},
+            {'name': 'Injured',     'value': injured_count, 'fill': 'var(--color-injured)'},
         ]
-        player_status_mix = [s for s in player_status_mix if s['value'] > 0]
+        # KEEP the 0 values so the donut chart always has 3 segments!
 
         # ── 3. Monthly injury trend (last 12 months) ─────────────────────
         twelve_months_ago = date.today() - timedelta(days=365)

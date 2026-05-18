@@ -30,8 +30,8 @@ TOOL_SCHEMAS: list[dict] = [
                 "properties": {
                     "limit": {
                         "type": "integer",
-                        "description": "Max players to return. Default is 31.",
-                        "default": 31,
+                        "description": "Max players to return. Default is 20 (limit to avoid token overflow).",
+                        "default": 20,
                     }
                 },
                 "required": [],
@@ -57,8 +57,8 @@ TOOL_SCHEMAS: list[dict] = [
                     },
                     "position": {
                         "type": "string",
-                        "description": "Filter by position: 'GK', 'DEF', 'MID', 'FWD'. Omit for all.",
-                        "enum": ["GK", "DEF", "MID", "FWD"],
+                        "description": "Filter by position: 'GK', 'DEF', 'MID', 'FW'. Omit for all.",
+                        "enum": ["GK", "DEF", "MID", "FW"],
                     },
                 },
                 "required": [],
@@ -547,14 +547,14 @@ MOCK_SQUAD = [
     # ── FORWARDS (8) ──────────────────────────────────────────
     # Strikers / ST (2)
     {
-        "player_id": 22, "name": "Youssef Msakni",    "position": "FWD",
+        "player_id": 22, "name": "Youssef Msakni",    "position": "FW",
         "sub_position": "Striker",
         "age": 33, "number": 11, "nationality": "Tunisian",
         "height_cm": 175, "weight_kg": 69,
         "preferred_foot": "Left",  "status": "available",
     },
     {
-        "player_id": 23, "name": "Seifeddine Jaziri",  "position": "FWD",
+        "player_id": 23, "name": "Seifeddine Jaziri",  "position": "FW",
         "sub_position": "Striker",
         "age": 32, "number": 9,  "nationality": "Tunisian",
         "height_cm": 182, "weight_kg": 78,
@@ -562,21 +562,21 @@ MOCK_SQUAD = [
     },
     # Left wingers / LW (3)
     {
-        "player_id": 24, "name": "Wahbi Khazri",      "position": "FWD",
+        "player_id": 24, "name": "Wahbi Khazri",      "position": "FW",
         "sub_position": "Left Winger",
         "age": 33, "number": 13, "nationality": "Tunisian",
         "height_cm": 178, "weight_kg": 73,
         "preferred_foot": "Right", "status": "available",
     },
     {
-        "player_id": 25, "name": "Hamza Ben Achour",  "position": "FWD",
+        "player_id": 25, "name": "Hamza Ben Achour",  "position": "FW",
         "sub_position": "Left Winger",
         "age": 25, "number": 21, "nationality": "Tunisian",
         "height_cm": 174, "weight_kg": 68,
         "preferred_foot": "Left",  "status": "available",
     },
     {
-        "player_id": 26, "name": "Chaim El Djebali",  "position": "FWD",
+        "player_id": 26, "name": "Chaim El Djebali",  "position": "FW",
         "sub_position": "Left Winger",
         "age": 22, "number": 29, "nationality": "Tunisian",
         "height_cm": 173, "weight_kg": 67,
@@ -584,21 +584,21 @@ MOCK_SQUAD = [
     },
     # Right wingers / RW (3)
     {
-        "player_id": 27, "name": "Taha Khenissi",     "position": "FWD",
+        "player_id": 27, "name": "Taha Khenissi",     "position": "FW",
         "sub_position": "Right Winger",
         "age": 28, "number": 18, "nationality": "Tunisian",
         "height_cm": 176, "weight_kg": 70,
         "preferred_foot": "Right", "status": "available",
     },
     {
-        "player_id": 28, "name": "Anis Slimane",      "position": "FWD",
+        "player_id": 28, "name": "Anis Slimane",      "position": "FW",
         "sub_position": "Right Winger",
         "age": 23, "number": 25, "nationality": "Tunisian",
         "height_cm": 175, "weight_kg": 69,
         "preferred_foot": "Right", "status": "available",
     },
     {
-        "player_id": 29, "name": "Mortadha Ben Ouanes", "position": "FWD",
+        "player_id": 29, "name": "Mortadha Ben Ouanes", "position": "FW",
         "sub_position": "Right Winger",
         "age": 26, "number": 27, "nationality": "Tunisian",
         "height_cm": 177, "weight_kg": 71,
@@ -614,8 +614,8 @@ MOCK_SQUAD = [
         "preferred_foot": "Right", "status": "available",
     },
     {
-        "player_id": 31, "name": "Bassem Srarfi",     "position": "FWD",
-        "sub_position": "Utility (FWD/MID)",
+        "player_id": 31, "name": "Bassem Srarfi",     "position": "FW",
+        "sub_position": "Utility (FW/MID)",
         "age": 28, "number": 31, "nationality": "Tunisian",
         "height_cm": 176, "weight_kg": 72,
         "preferred_foot": "Left",  "status": "available",
@@ -630,7 +630,7 @@ MOCK_SQUAD = [
 
 
 
-def _mock_list_all_players(limit: int = 31) -> dict:
+def _mock_list_all_players(limit: int = 20) -> dict:
     players = MOCK_SQUAD[:limit]
     return {
         "players": players,
@@ -639,7 +639,7 @@ def _mock_list_all_players(limit: int = 31) -> dict:
             "GK":  len([p for p in players if p["position"] == "GK"]),
             "DEF": len([p for p in players if p["position"] == "DEF"]),
             "MID": len([p for p in players if p["position"] == "MID"]),
-            "FWD": len([p for p in players if p["position"] == "FWD"]),
+            "FW": len([p for p in players if p["position"] == "FW"]),
         },
         "_mock": True,
     }
@@ -650,12 +650,10 @@ def _mock_squad_risk(n: int = 5, position: str | None = None) -> dict:
     if position:
         players = [p for p in players if p["position"] == position]
 
-    # Generate deterministic-ish risk scores based on player_id
-    risk_levels = ["low", "medium", "high", "critical"]
     results = []
     for p in players:
-        # Seed with player_id for consistency across calls
-        random.seed(p["player_id"] * 7)
+        # Unique seed per player using large prime multiplier for good distribution
+        random.seed(p["player_id"] * 7919 + 12345)
         score = round(random.uniform(0.10, 0.95), 2)
         level = (
             "critical" if score >= 0.85 else
@@ -663,6 +661,11 @@ def _mock_squad_risk(n: int = 5, position: str | None = None) -> dict:
             "medium"   if score >= 0.40 else
             "low"
         )
+        # Re-seed for ACWR and fatigue to decouple from risk_score
+        random.seed(p["player_id"] * 6271 + 67890)
+        acwr = round(random.uniform(0.70, 1.60), 2)
+        random.seed(p["player_id"] * 5437 + 11111)
+        fatigue = round(random.uniform(0.20, 0.90), 2)
         results.append({
             "player_id":    p["player_id"],
             "name":         p["name"],
@@ -670,6 +673,8 @@ def _mock_squad_risk(n: int = 5, position: str | None = None) -> dict:
             "sub_position": p["sub_position"],
             "risk_score":   score,
             "risk_level":   level,
+            "acwr":         acwr,
+            "fatigue_index": fatigue,
             "status":       p["status"],
         })
 
@@ -702,9 +707,12 @@ def _mock_physio_risk(player_id: int) -> dict:
             ),
         }
 
-    random.seed(player_id * 13)
-    acwr  = round(random.uniform(0.70, 1.60), 2)
+    random.seed(player_id * 7919 + 12345)
     score = round(random.uniform(0.10, 0.95), 2)
+    random.seed(player_id * 6271 + 67890)
+    acwr  = round(random.uniform(0.70, 1.60), 2)
+    random.seed(player_id * 5437 + 11111)
+    fatigue = round(random.uniform(0.20, 0.90), 2)
     level = (
         "critical" if score >= 0.85 else
         "high"     if score >= 0.65 else
@@ -723,7 +731,7 @@ def _mock_physio_risk(player_id: int) -> dict:
         "weight_kg":      player["weight_kg"],
         "preferred_foot": player["preferred_foot"],
         "acwr":           acwr,
-        "fatigue_index":  round(random.uniform(0.20, 0.90), 2),
+        "fatigue_index":  fatigue,
         "risk_score":     score,
         "risk_level":     level,
         "recommendation": (

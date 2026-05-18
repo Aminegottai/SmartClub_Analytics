@@ -5,9 +5,9 @@
 :root {
   --bg-main: #070b14;
   --bg-sidebar: #0a0f1c;
-  --bg-card: #111827;
+  --bg-card: #1a1f2e;
   --bg-card-hover: #1f2937;
-  --border-color: #1e293b;
+  --border-color: rgba(255, 255, 255, 0.08);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
@@ -19,6 +19,11 @@
   --neon-green: #00ff00;
   --neon-blue: #3b82f6;
   --neon-purple: #a855f7;
+
+  --color-fit: #22c55e;
+  --color-risk: #f59e0b;
+  --color-injured: #ef4444;
+  --color-neutral: #06b6d4;
 }
 
 /* ─── Reset & Base ──────────────────────────────────────────────── */

@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────
 # Token budget (conservative for free tier)
 # ──────────────────────────────────────────────
-MAX_HISTORY_TOKENS = 1500    # total history sent per request
-MAX_RESPONSE_TOKENS = 400     # max LLM output tokens
+MAX_HISTORY_TOKENS = 800     # total history sent per request (reduced to avoid TPM limits)
+MAX_RESPONSE_TOKENS = 350     # max LLM output tokens (reduced for speed)
 APPROX_CHARS_PER_TOKEN = 4    # rough estimator (good enough)
 
 # ──────────────────────────────────────────────
@@ -23,105 +23,71 @@ APPROX_CHARS_PER_TOKEN = 4    # rough estimator (good enough)
 SYSTEM_PROMPTS: dict[str, str] = {
     "en": (
         "You are SmartClub AI, a football club data assistant. "
-        "NEVER answer from memory — always call a tool first. "
-        "TOOL RULES: "
-        "'list/show/all players/squad' → list_all_players. "
-        "'squad injury/risk' → squad_risk. "
-        "'[player name] injury/risk' → player_search then physio_risk(exact id from search). "
-        "'[player name] training/ACWR' → player_search then physio_timeseries(exact id). "
-        "'[player name] nutrition' → player_search then nutri_generate_plan(exact id). "
-        "'food/meal calc' → nutri_meal_calc or food_search. "
-        "CRITICAL: after player_search, use ONLY the returned player_id. Never guess IDs. "
-        "ERROR RULE: if tool returns error:true → say only: ⚠️ Service unavailable. "
-        "If tool returns data → present ALL data, never say 'service unavailable'. "
-        "GREETING RULE: pure greeting (hi/hello only) → say: "
-        "Hey! I'm SmartClub AI 📊 I help with: injury risk, training load, nutrition, player search. "
-        "Greeting + request → skip greeting, call tool directly. "
-        "Off-topic → say: I only help with injury risk, training load, nutrition, player search. "
-        "FORMAT: player list → one line each: #8 Ellyes Skhiri — Defensive Mid — Age 29 — Available. "
-        "Single player: show ALL available fields from tool data like this: "
-        "**Ellyes Skhiri** | Jersey #8 | Defensive Mid | Age: 29 | Tunisian | Available "
-        "Height: 183cm | Weight: 78kg | Foot: Right "
-        "Only include a field if the tool returned a non-null value for it. "
-        "Never write Xcm or Xkg — if height/weight are missing just omit those lines. "
-        "Risk data → Risk Score: X.XX — LEVEL | ACWR: X.XX | Fatigue: X.XX | Recommendation: text. "
-        "Never show player_id, _mock, or raw JSON fields. Never repeat a player twice. "
-        "Never print empty fields. Use Markdown. Respond in English."
+        "NEVER answer from memory — always call a tool. "
+        "MAPPING: list/players/squad→list_all_players. squad risk→squad_risk. "
+        "[name]+injury/risk→player_search then physio_risk(exact id). "
+        "[name]+training/ACWR→player_search then physio_timeseries. "
+        "[name]+nutrition→player_search then nutri_generate_plan. "
+        "food/meal→nutri_meal_calc or food_search. "
+        "CRITICAL: after player_search use ONLY the returned player_id. Never guess. "
+        "ERROR: tool returns error→say: ⚠️ Service unavailable. "
+        "GREETING only→'Hey! I am SmartClub AI 📊 I help with injury risk, training, nutrition, players.' "
+        "Greeting+request→skip greeting, call tool. "
+        "Off-topic→say: I only help with injury risk, training, nutrition, players. "
+        "FORMAT: list→one line: #8 Ellyes Skhiri — Defensive Mid — Age 29 — Available. "
+        "For full squad (>15 players)→use COMPACT one-line format like: '#1 Moez Ben Cherifa — Goalkeeper — Age 28 — Available'. "
+        "Single player→show ALL non-null fields: name, jersey, position, age, nationality, status, height, weight, foot. "
+        "Risk→Risk Score: X.XX — LEVEL | ACWR: X.XX | Fatigue: X.XX | Recommendation. "
+        "Never show player_id, _mock, or raw JSON. Never repeat a player. Use Markdown. English."
     ),
     "fr": (
         "Tu es SmartClub AI, assistant data football. "
-        "Ne réponds JAMAIS de mémoire — appelle toujours un outil d'abord. "
-        "RÈGLES OUTILS: "
-        "'liste/tous joueurs/équipe' → list_all_players. "
-        "'risque blessure équipe' → squad_risk. "
-        "'[nom joueur] risque/blessure' → player_search puis physio_risk(id exact). "
-        "'[nom joueur] charge/ACWR' → player_search puis physio_timeseries(id exact). "
-        "'[nom joueur] nutrition' → player_search puis nutri_generate_plan(id exact). "
-        "'repas/aliment' → nutri_meal_calc ou food_search. "
-        "CRITIQUE: après player_search, utilise UNIQUEMENT le player_id retourné. "
-        "ERREUR: si outil retourne error:true → dis seulement: ⚠️ Service indisponible. "
-        "Si outil retourne des données → présente TOUTES les données. "
-        "SALUTATION pure → dis: Salut! Je suis SmartClub AI 📊 "
-        "Salutation + demande → ignore salutation, appelle l'outil directement. "
-        "Hors-sujet → dis: J'aide uniquement avec risque blessure, charge, nutrition, joueurs. "
-        "FORMAT: liste → #8 Ellyes Skhiri — Milieu Déf — 29 ans — Disponible. "
-        "Joueur seul: montre TOUS les champs disponibles comme ceci: "
-        "**Ellyes Skhiri** | Maillot #8 | Milieu Déf | Âge: 29 | Tunisien | Disponible "
-        "Taille: 183cm | Poids: 78kg | Pied: Droit "
-        "N'inclus un champ que s'il n'est pas nul. "
-        "N'écris jamais Xcm ou Xkg — si la taille/poids manquent, omet ces lignes. "
-        "Risque → Score: X.XX — NIVEAU | ACWR: X.XX | Fatigue: X.XX | Recommandation: texte. "
-        "Jamais player_id, _mock ou JSON brut. Jamais répéter un joueur. Markdown. Français."
+        "Ne réponds JAMAIS de mémoire — appelle un outil. "
+        "MAPPING: liste/joueurs/équipe→list_all_players. risque équipe→squad_risk. "
+        "[nom]+risque/blessure→player_search puis physio_risk(id exact). "
+        "[nom]+charge/ACWR→player_search puis physio_timeseries. "
+        "[nom]+nutrition→player_search puis nutri_generate_plan. "
+        "repas/aliment→nutri_meal_calc ou food_search. "
+        "CRITIQUE: après player_search utilise UNIQUEMENT le player_id retourné. "
+        "ERREUR: outil retourne error→dis: ⚠️ Service indisponible. "
+        "SALUTATION seule→'Salut! Je suis SmartClub AI 📊' "
+        "Salutation+demande→ignore, appelle outil. Hors-sujet→J'aide seulement risque, charge, nutrition, joueurs. "
+        "FORMAT: liste→#8 Ellyes Skhiri — Milieu Déf — 29 ans — Disponible. "
+        "Joueur seul→affiche TOUS champs non-nuls: nom, maillot, position, âge, nationalité, statut, taille, poids, pied. "
+        "Risque→Score: X.XX — NIVEAU | ACWR: X.XX | Fatigue: X.XX | Recommandation. "
+        "Jamais player_id, _mock ou JSON brut. Markdown. Français."
     ),
     "ar": (
         "أنت SmartClub AI، مساعد بيانات كرة القدم. "
-        "لا تجب من الذاكرة أبداً — استدعِ أداة دائماً. "
-        "قواعد الأدوات: "
-        "'قائمة/كل اللاعبين/الفريق' → list_all_players. "
-        "'خطر إصابة الفريق' → squad_risk. "
-        "'[اسم لاعب] خطر/إصابة' → player_search ثم physio_risk(id من البحث). "
-        "'[اسم لاعب] تدريب/ACWR' → player_search ثم physio_timeseries(id من البحث). "
-        "'[اسم لاعب] تغذية' → player_search ثم nutri_generate_plan(id من البحث). "
-        "'وجبة/طعام' → nutri_meal_calc أو food_search. "
-        "مهم: بعد player_search استخدم player_id المُرجَع فقط. لا تخمن. "
-        "خطأ: إذا أعادت الأداة error:true → قل فقط: ⚠️ الخدمة غير متاحة. "
-        "إذا أعادت بيانات → اعرض كل البيانات. "
-        "تحية فقط → قل: مرحباً! أنا SmartClub AI 📊 "
-        "تحية + طلب → تجاهل التحية واستدعِ الأداة مباشرة. "
-        "خارج الموضوع → أنا أساعد فقط في: خطر إصابة، تدريب، تغذية، بحث لاعبين. "
-        "تنسيق: قائمة → #8 إلياس سخيري — وسط دفاعي — 29 سنة — متاح. "
-        "لاعب واحد: اعرض جميع الحقول المتاحة من البيانات مثل هذا: "
-        "**إلياس سخيري** | رقم 8 | وسط دفاعي | العمر: 29 | تونسي | متاح "
-        "الطول: 183cm | الوزن: 78kg | القدم: اليمنى "
-        "قم بتضمين الحقل فقط إذا كان له قيمة. "
-        "لا تكتب أبداً Xcm أو Xkg — إذا كان الطول/الوزن مفقوداً، تجاهل تلك الأسطر. "
-        "خطر → النتيجة: X.XX — المستوى | ACWR: X.XX | إجهاد: X.XX | توصية: نص. "
-        "لا تعرض player_id أو _mock. لا تكرر لاعباً. استخدم Markdown. بالعربية."
+        "لا تجب من الذاكرة — استدعِ أداة. "
+        "قائمة/لاعبين/فريق→list_all_players. خطر الفريق→squad_risk. "
+        "[اسم]+خطر→player_search ثم physio_risk(id). "
+        "[اسم]+تدريب→player_search ثم physio_timeseries. "
+        "[اسم]+تغذية→player_search ثم nutri_generate_plan. "
+        "وجبة→nutri_meal_calc أو food_search. "
+        "مهم: استخدم player_id المُرجَع فقط. خطأ→⚠️ الخدمة غير متاحة. "
+        "تحية→مرحباً! أنا SmartClub AI 📊. تحية+طلب→تجاهل التحية. "
+        "خارج الموضوع→أساعد فقط في خطر إصابة، تدريب، تغذية، لاعبين. "
+        "قائمة→#8 إلياس سخيري — وسط دفاعي — 29 سنة. "
+        "لاعب→اعرض الحقول غير الفارغة: اسم، رقم، مركز، عمر، جنسية، حالة، طول، وزن، قدم. "
+        "خطر→النتيجة: X.XX — المستوى | ACWR: X.XX | توصية. "
+        "لا تعرض player_id أو _mock. Markdown. بالعربية."
     ),
     "tn": (
         "أنت SmartClub AI، مساعد داتا كرة القدم. "
-        "ما تجاوبش من الذاكرة — شغل أداة دائماً. "
-        "قواعد الأدوات: "
-        "'قائمة/كل اللاعبين/الفريق' → list_all_players. "
-        "'خطر إصابة الفريق' → squad_risk. "
-        "'[اسم لاعب] خطر/إصابة' → player_search وبعدها physio_risk(id من البحث). "
-        "'[اسم لاعب] تدريب/ACWR' → player_search وبعدها physio_timeseries(id من البحث). "
-        "'[اسم لاعب] تغذية' → player_search وبعدها nutri_generate_plan(id من البحث). "
-        "'ماكلة/أكل' → nutri_meal_calc ولا food_search. "
-        "مهم: بعد player_search استخدم player_id اللي رجع بالضبط. ما تخمنش. "
-        "خطأ: كي الأداة ترجع error:true → قول بس: ⚠️ الخدمة مش متاحة. "
-        "كي الأداة ترجع داتا → عرض كل الداتا. "
-        "سلام بس → قول: أهلا! أنا SmartClub AI 📊 "
-        "سلام + طلب → تجاهل السلام وشغل الأداة على طول. "
-        "خارج الموضوع → أنا نساعد بس في: خطر إصابة، تدريب، تغذية، بحث لاعبين. "
-        "تنسيق: قائمة → #8 إلياس سخيري — وسط دفاعي — 29 سنة — متاح. "
-        "لاعب واحد: عرض كل البيانات المتاحة كيما هكا: "
-        "**إلياس سخيري** | رقم 8 | وسط دفاعي | العمر: 29 | تونسي | متاح "
-        "الطول: 183cm | الوزن: 78kg | القدم: اليمنى "
-        "حط الحقل كان فيه قيمة برك. "
-        "عمرك ما تكتب Xcm ولا Xkg — كان الطول/الوزن ناقصين، نحي الأسطر هذيكا. "
-        "خطر → النتيجة: X.XX — المستوى | ACWR: X.XX | إجهاد: X.XX | توصية: نص. "
-        "ما تعرضش player_id ولا _mock. ما تكررش لاعب. استخدم Markdown. بالدرجة."
+        "ما تجاوبش من الذاكرة — شغل أداة. "
+        "قائمة/لاعبين/فريق→list_all_players. خطر الفريق→squad_risk. "
+        "[اسم]+خطر→player_search وبعدها physio_risk(id). "
+        "[اسم]+تدريب→player_search وبعدها physio_timeseries. "
+        "[اسم]+تغذية→player_search وبعدها nutri_generate_plan. "
+        "ماكلة→nutri_meal_calc ولا food_search. "
+        "مهم: استخدم player_id اللي رجع. خطأ→⚠️ الخدمة مش متاحة. "
+        "سلام→أهلا! أنا SmartClub AI 📊. سلام+طلب→تجاهل. "
+        "خارج الموضوع→نساعد فقط في خطر إصابة، تدريب، تغذية، لاعبين. "
+        "قائمة→#8 إلياس سخيري — وسط دفاعي — 29 سنة. "
+        "لاعب→عرض الحقول غير الفارغة: اسم، رقم، مركز، عمر، جنسية، حالة، طول، وزن، قدم. "
+        "خطر→النتيجة: X.XX — المستوى | ACWR: X.XX | توصية. "
+        "ما تعرضش player_id ولا _mock. Markdown. بالدرجة."
     ),
 }
 
@@ -130,6 +96,45 @@ SYSTEM_PROMPTS: dict[str, str] = {
 # ──────────────────────────────────────────
 def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // APPROX_CHARS_PER_TOKEN)
+
+
+def _trim_tool_result(result: dict) -> dict:
+    """
+    Trim large tool results before injecting into LLM messages.
+    Keeps only essential data to reduce token consumption.
+    """
+    if not isinstance(result, dict):
+        return result
+
+    # Trim long player lists: keep all players but only essential fields
+    if "players" in result and isinstance(result["players"], list):
+        trimmed = []
+        for p in result["players"]:
+            if isinstance(p, dict):
+                trimmed.append({
+                    "player_id": p.get("player_id"),
+                    "name": p.get("name"),
+                    "position": p.get("position"),
+                    "sub_position": p.get("sub_position"),
+                    "status": p.get("status"),
+                    "number": p.get("number"),
+                    "age": p.get("age"),
+                    "nationality": p.get("nationality"),
+                    "risk_score": p.get("risk_score"),
+                    "risk_level": p.get("risk_level"),
+                    "acwr": p.get("acwr"),
+                    "fatigue_index": p.get("fatigue_index"),
+                })
+            else:
+                trimmed.append(p)
+        result["players"] = trimmed
+
+    # Trim time series data: keep last 10 points max
+    if "series" in result and isinstance(result["series"], list) and len(result["series"]) > 10:
+        result["series"] = result["series"][-10:]
+        result["days"] = len(result["series"])
+
+    return result
 
 
 def _trim_history(history: list[dict], budget: int = MAX_HISTORY_TOKENS) -> list[dict]:
@@ -173,7 +178,7 @@ def _trim_history(history: list[dict], budget: int = MAX_HISTORY_TOKENS) -> list
 # Tool-calling loop
 # ──────────────────────────────────────────────
 
-MAX_TOOL_ITERATIONS = 3    # prevent infinite loops
+MAX_TOOL_ITERATIONS = 2    # prevent infinite loops (reduced for speed + TPM budget)
 
 
 def run_agent(
@@ -301,6 +306,9 @@ def run_agent(
             # ── END GUARD ─────────────────────────────────────────
 
             executed_tools.append({"tool": fn_name, "args": fn_args, "success": success})
+
+            # Trim large results to stay under TPM limits
+            result = _trim_tool_result(result)
 
             messages.append({
                 "role":        "tool",
@@ -439,6 +447,9 @@ def _stream_with_tools(messages: list[dict], executed_tools: list):
             executed_tools.append({"tool": fn_name, "args": fn_args, "success": success})
 
             yield json.dumps({"type": "tool_end", "data": {"tool": fn_name, "success": success}}) + "\n"
+
+            # Trim large results to stay under TPM limits
+            result = _trim_tool_result(result)
 
             messages.append({
                 "role":        "tool",

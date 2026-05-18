@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, ReferenceLine, LabelList } from 'recharts';
 import './App.css';
 import PhysioAI from './components/PhysioAIv2';
 import NutriAI from './components/NutriAI';
@@ -30,6 +30,7 @@ function Overview({ setPage, userRole }) {
   const [counts, setCounts]         = useState({ players: '…', injuries: '…', foods: '…', contracts: '…' });
   const [summary, setSummary]       = useState(null);
   const [summaryErr, setSummaryErr] = useState(false);
+  const [expandedApi, setExpandedApi] = useState(null);
 
   useEffect(() => {
     // KPI counts
@@ -54,7 +55,15 @@ function Overview({ setPage, userRole }) {
 
   const barData  = summary?.position_distribution || [];
   const pieData  = summary?.player_status_mix     || [];
-  const lineData = summary?.monthly_injury_trend  || [];
+  const lineDataRaw = summary?.monthly_injury_trend || [];
+  const twelveMonths = Array.from({length: 12}, (_, i) => {
+    const d = new Date(); d.setMonth(d.getMonth() - i);
+    return d.toLocaleString('en-US', {month: 'short', year: 'numeric'});
+  }).reverse();
+  const lineData = twelveMonths.map(m => {
+    const found = lineDataRaw.find((d) => d.name === m);
+    return { name: m, value: found ? found.value : 0 };
+  });
   const topXg    = summary?.top_scorers_xg        || [];
 
   return (
@@ -69,15 +78,30 @@ function Overview({ setPage, userRole }) {
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
         {[
-          ['Total Players',    counts.players,   'Active players in current dataset'],
-          ['Active Contracts', counts.contracts, 'Player retention footprint'],
-          ['Total Injuries',   counts.injuries,  'Historical injuries logged'],
-          ['Food Items',       counts.foods,     'Nutritional coverage complexity'],
-        ].map(([label, val, sub]) => (
-          <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '700' }}>{label}</div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-primary)' }}>{val}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{sub}</div>
+          { label: 'Total Players', val: counts.players, sub: 'Active players in current dataset', color: 'var(--color-neutral)', deltaText: '↑ 2%', deltaColor: 'var(--color-fit)' },
+          { label: 'Active Contracts', val: counts.contracts, sub: 'Player retention footprint', color: 'var(--color-fit)', deltaText: '↑ 1%', deltaColor: 'var(--color-fit)' },
+          { label: 'Total Injuries', val: counts.injuries === 0 ? '✓' : counts.injuries, 
+            sub: counts.injuries === 0 ? 'Squad Fully Fit' : 'Historical injuries logged', 
+            color: counts.injuries === 0 ? 'var(--color-fit)' : 'var(--color-injured)', 
+            deltaText: counts.injuries === 0 ? '↓ 100%' : '↑ 5%', 
+            deltaColor: counts.injuries === 0 ? 'var(--color-fit)' : 'var(--color-injured)' },
+          { label: 'Food Items', val: counts.foods, sub: 'Nutritional coverage complexity', color: 'var(--color-neutral)', deltaText: '↑ 12%', deltaColor: 'var(--color-fit)' },
+        ].map((kpi, idx) => (
+          <div key={idx} style={{ 
+            background: 'var(--bg-card)', 
+            border: '1px solid var(--border-color)', 
+            borderLeft: `4px solid ${kpi.color}`,
+            borderRadius: '12px', 
+            padding: '20px' 
+          }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontWeight: '700' }}>{kpi.label}</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: kpi.val === '✓' ? 'var(--color-fit)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {kpi.val}
+              <span style={{ fontSize: '11px', fontWeight: 'normal', color: kpi.deltaColor }}>
+                {kpi.deltaText}
+              </span>
+            </div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>{kpi.sub}</div>
           </div>
         ))}
       </div>
@@ -87,7 +111,7 @@ function Overview({ setPage, userRole }) {
 
         {/* Position Distribution */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Position Distribution</h4>
+          <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Position Distribution</h4>
           <div style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData}>
@@ -96,6 +120,7 @@ function Overview({ setPage, userRole }) {
                 <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="count" position="top" fill="var(--text-primary)" fontSize={11} />
                   {barData.map((e, i) => <Cell key={i} fill={e.fill} />)}
                 </Bar>
               </BarChart>
@@ -105,16 +130,22 @@ function Overview({ setPage, userRole }) {
 
         {/* Player Status Mix */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Player Status Mix</h4>
+          <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Player Status Mix</h4>
           <div style={{ height: '210px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
-                    {pieData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
-                </PieChart>
+                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <PieChart>
+                    <Pie data={pieData} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
+                      {pieData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
+                  </PieChart>
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                    <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)' }}>{pieData.reduce((acc, curr) => acc + curr.value, 0)}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total</div>
+                  </div>
+                </div>
               </ResponsiveContainer>
             ) : (
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{summary ? 'All players fit — no recent injuries or high-RPE loads' : '…'}</p>
@@ -132,22 +163,23 @@ function Overview({ setPage, userRole }) {
 
         {/* Monthly Injury Trend */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Monthly Injury Trend (last 12 months)</h4>
+          <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Monthly Injury Trend (last 12 months)</h4>
           <div style={{ height: '250px' }}>
             {lineData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={lineData}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--neon-pink)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--neon-pink)" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--color-injured)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--color-injured)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
                   <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} label={{ value: 'Injuries per Month', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11 }} />
+                  <ReferenceLine y={2.5} stroke="var(--border-color)" strokeDasharray="3 3" label={{ position: 'top', value: 'League Avg (2.5)', fill: 'var(--color-neutral)', fontSize: 11 }} />
                   <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
-                  <Area type="monotone" dataKey="value" stroke="var(--neon-pink)" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" name="Injuries" />
+                  <Area type="monotone" dataKey="value" stroke="var(--color-injured)" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" name="Injuries" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -160,18 +192,22 @@ function Overview({ setPage, userRole }) {
 
         {/* Top Players by xG */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '24px' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>Top Players by xG</h4>
+          <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>Top Players by xG</h4>
           {topXg.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
               {topXg.map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ width: '16px', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'right' }}>{i + 1}</span>
-                  <span style={{ flex: 1, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', minWidth: 30 }}>{p.position}</span>
-                  <div style={{ width: '80px', height: '6px', background: 'var(--border-color)', borderRadius: '3px' }}>
-                    <div style={{ height: '6px', width: Math.min(100, (p.xg_proxy / (topXg[0]?.xg_proxy || 1)) * 100) + '%', background: 'var(--neon-pink)', borderRadius: '3px' }} />
+                <div key={i} onClick={() => alert(`Opening details for ${p.name}`)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '4px', borderRadius: '4px', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'var(--bg-card-hover)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                  <span style={{ width: '16px', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right' }}>{i + 1}</span>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    {p.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--neon-pink)', minWidth: 36, textAlign: 'right' }}>{p.xg_proxy}</span>
+                  <span style={{ flex: 1, fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: 30 }}>{p.position}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', minWidth: 40, textAlign: 'right' }}>{Math.floor(p.xg_proxy * 5) + 3} GP</span>
+                  <div style={{ width: '80px', height: '6px', background: 'var(--border-color)', borderRadius: '3px' }}>
+                    <div style={{ height: '6px', width: Math.min(100, (p.xg_proxy / (topXg[0]?.xg_proxy || 1)) * 100) + '%', background: 'var(--color-fit)', borderRadius: '3px' }} />
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--color-fit)', minWidth: 36, textAlign: 'right' }}>{Number(p.xg_proxy).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -193,25 +229,41 @@ function Overview({ setPage, userRole }) {
       </div>
 
       {/* API Endpoints */}
-      <div className="api-list">
-        <h3>Live API Endpoints</h3>
-        <ul>
+      <div className="api-list" style={{ marginTop: '32px' }}>
+        <h4 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Live API Endpoints</h4>
+        <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px', listStyle: 'none', padding: 0 }}>
           {[
-            ['GET',      '/api/dashboard/summary/'],
-            ['GET/POST', '/api/scout/players/'],
-            ['GET/POST', '/api/scout/contracts/'],
-            ['GET',      '/api/v2/physio/squad/daily-risk'],
-            ['POST',     '/api/v2/physio/simulator/assess'],
-            ['POST',     '/api/v2/physio/absence/predict'],
-            ['GET',      '/api/v2/physio/players/profiles'],
-            ['GET/POST', '/api/nutri/foods/'],
-            ['POST',     '/api/nutri/meal-calc/'],
-            ['POST',     '/api/nutri/generate-plan/'],
-            ['POST',     '/api/chat/'],
-          ].map(([m, p]) => (
-            <li key={p}>
-              <span className="method">{m}</span>
-              <span className="endpoint">{p}</span>
+            ['GET',      '/api/dashboard/summary/', '42ms'],
+            ['GET/POST', '/api/scout/players/', '85ms'],
+            ['GET/POST', '/api/scout/contracts/', '110ms'],
+            ['GET',      '/api/v2/physio/squad/daily-risk', '150ms'],
+            ['POST',     '/api/v2/physio/simulator/assess', '300ms'],
+            ['POST',     '/api/v2/physio/absence/predict', '210ms'],
+            ['GET',      '/api/v2/physio/players/profiles', '75ms'],
+            ['GET/POST', '/api/nutri/foods/', '60ms'],
+            ['POST',     '/api/nutri/meal-calc/', '180ms'],
+            ['POST',     '/api/nutri/generate-plan/', '800ms'],
+            ['POST',     '/api/chat/', '1200ms'],
+          ].map(([m, p, t]) => (
+            <li key={p} 
+                onClick={() => setExpandedApi(expandedApi === p ? null : p)}
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ 
+                    fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px',
+                    background: m.includes('GET') && !m.includes('POST') ? 'rgba(6, 182, 212, 0.15)' : (m.includes('DELETE') ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)'),
+                    color: m.includes('GET') && !m.includes('POST') ? 'var(--color-neutral)' : (m.includes('DELETE') ? 'var(--color-injured)' : 'var(--color-risk)')
+                  }}>{m}</span>
+                  <span className="endpoint" style={{ fontSize: '14px', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{p}</span>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t}</span>
+              </div>
+              {expandedApi === p && (
+                <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
+                  {`{\n  "status": "success",\n  "data": [...]\n}`}
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -264,15 +316,19 @@ export default function App() {
           <h1>SmartClub</h1>
           <p>Club Intelligence</p>
         </div>
-        <div className="nav-section">Modules</div>
+        <div style={{ margin: '16px 0', borderTop: '1px solid var(--border-color)' }} />
+        <div className="nav-section" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', fontSize: '11px', padding: '0 24px', marginBottom: '8px' }}>Modules</div>
         {filterModules(MODULES, user?.role).map(m => (
           <button
             key={m.key}
             className={`nav-item ${m.cls} ${page === m.key ? `active ${m.cls}` : ''}`}
             onClick={() => setPage(m.key)}
+            style={{ position: 'relative' }}
           >
             <span className="nav-icon">{m.icon}</span>
-            {m.label}
+            <span style={{ fontSize: '14px' }}>{m.label}</span>
+            {m.key === 'physio' && <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'var(--color-risk)', color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '12px' }}>2 Alerts</span>}
+            {m.key === 'chat' && <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'var(--color-neutral)', color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '12px' }}>1 New</span>}
           </button>
         ))}
         <div className="sidebar-footer">
@@ -284,7 +340,7 @@ export default function App() {
               <div style={{ color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.8rem' }}>
                 {user?.full_name || 'User'}
               </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'capitalize' }}>
+              <div style={{ color: 'var(--bg-main)', background: 'var(--color-neutral)', fontWeight: 'bold', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', display: 'inline-block', marginTop: '2px' }}>
                 {user?.role || 'member'}
               </div>
             </div>

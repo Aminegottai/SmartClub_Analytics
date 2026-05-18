@@ -419,18 +419,36 @@ export default function Chatbot() {
     }
   };
 
+  const clearHistory = async (silent = false) => {
+    try {
+      await fetch('/api/chat/reset/', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getAccessToken()}` },
+      });
+    } catch (e) {
+      // Server clear is optional; continue even if it fails
+    }
+    localStorage.removeItem(SESSION_KEY);
+    setSessionId(null);
+    setLastPlayer(null);
+    setMessages([{
+      id: `welcome-${Date.now()}`, role: 'bot', rtl: false, ts: new Date().toISOString(),
+      text: silent
+        ? 'History cleared. Ask me anything!'
+        : 'New conversation started. How can I help?',
+      toolCalls: null, grounding: null, streaming: false,
+    }]);
+  };
+
   const handleNewSession = () => {
     const confirmed = window.confirm("Start a new conversation? This will clear the current chat history.");
     if (confirmed) {
-      localStorage.removeItem(SESSION_KEY);
-      setSessionId(null);
-      setLastPlayer(null);
-      setMessages([{
-        id: `welcome-${Date.now()}`, role: 'bot', rtl: false, ts: new Date().toISOString(),
-        text: 'New conversation started. How can I help?',
-        toolCalls: null, grounding: null, streaming: false,
-      }]);
+      clearHistory();
     }
+  };
+
+  const handleClearHistory = () => {
+    clearHistory(true);
   };
 
   return (
@@ -488,6 +506,21 @@ export default function Chatbot() {
             }}
           >
             ➕ New
+          </button>
+          <button
+            onClick={handleClearHistory}
+            disabled={loading || isStreaming}
+            title="Clear chat history instantly"
+            style={{
+              padding: '6px 10px', fontSize: '0.72rem', borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'transparent',
+              color: (loading || isStreaming) ? 'var(--text-muted)' : '#ef4444',
+              cursor: (loading || isStreaming) ? 'not-allowed' : 'pointer',
+              opacity: (loading || isStreaming) ? 0.5 : 1,
+            }}
+          >
+            🗑️ Clear
           </button>
         </div>
       </div>

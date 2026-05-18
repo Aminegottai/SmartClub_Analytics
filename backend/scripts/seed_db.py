@@ -37,7 +37,7 @@ def read_csv(name):
 
 def seed_superuser():
     if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@smartclub.local', 'admin123')
+        User.objects.create_superuser('admin', 'admin@smartclub.local', 'admin123', role='admin')
         print('[✓] Superuser created: admin / admin123')
     else:
         print('[·] Superuser already exists')
